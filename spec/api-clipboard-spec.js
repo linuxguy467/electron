@@ -15,11 +15,12 @@ describe('clipboard module', () => {
   });
 
   describe('clipboard.readImage()', () => {
-    it('returns NativeImage instance', () => {
+    it('returns NativeImage instance', async () => {
       const p = path.join(fixtures, 'assets', 'logo.png');
       const i = nativeImage.createFromPath(p);
       clipboard.writeImage(p);
-      expect(clipboard.readImage().toDataURL()).to.equal(i.toDataURL());
+      const readImage = await clipboard.readImage();
+      expect(readImage.toDataURL()).to.equal(i.toDataURL());
     });
   });
 
@@ -71,7 +72,7 @@ describe('clipboard module', () => {
   });
 
   describe('clipboard.write()', () => {
-    it('returns data correctly', () => {
+    it('returns data correctly', async () => {
       const text = 'test';
       const rtf = '{\\rtf1\\utf8 text}';
       const p = path.join(fixtures, 'assets', 'logo.png');
@@ -89,7 +90,8 @@ describe('clipboard module', () => {
       expect(clipboard.readText()).to.equal(text);
       expect(clipboard.readHTML()).to.equal(markup);
       expect(clipboard.readRTF()).to.equal(rtf);
-      expect(clipboard.readImage().toDataURL()).to.equal(i.toDataURL());
+      const readImage = await clipboard.readImage();
+      expect(readImage.toDataURL()).to.equal(i.toDataURL());
 
       if (process.platform !== 'linux') {
         expect(clipboard.readBookmark()).to.deep.equal(bookmark);

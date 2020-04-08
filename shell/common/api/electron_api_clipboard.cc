@@ -4,9 +4,12 @@
 
 #include "shell/common/api/electron_api_clipboard.h"
 
+#include <utility>
+
 #include "base/strings/utf_string_conversions.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
@@ -178,10 +181,18 @@ void Clipboard::WriteBookmark(const base::string16& title,
   writer.WriteBookmark(title, url);
 }
 
-gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
+v8::Local<v8::Promise> Clipboard::ReadImage(gin_helper::Arguments* args) {
+  gin_helper::Promise<gfx::Image> promise(args->isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  SkBitmap bitmap = clipboard->ReadImage(GetClipboardBuffer(args));
-  return gfx::Image::CreateFrom1xBitmap(bitmap);
+  clipboard->ReadImage(
+      GetClipboardBuffer(args),
+      base::BindOnce(
+          [](gin_helper::Promise<gfx::Image> promise, const SkBitmap& result) {
+            promise.Resolve(gfx::Image::CreateFrom1xBitmap(result));
+          },
+          std::move(promise)));
+  return handle;
 }
 
 void Clipboard::WriteImage(const gfx::Image& image,
